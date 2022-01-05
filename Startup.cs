@@ -14,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
+using ProductQL.Filters;
 using ProductQL.GraphQL;
 using ProductQL.Helpers;
 using ProductQL.Inputs;
@@ -56,6 +57,7 @@ namespace ProductQL
             });
             var connString = Configuration.GetConnectionString("LocalSQLEdge");
             
+            services.AddErrorFilter<LoginErrorExceptionFilter>();
             services.AddDbContext<productsContext>(options => 
             options.UseSqlServer(connString));
             Console.WriteLine(connString);

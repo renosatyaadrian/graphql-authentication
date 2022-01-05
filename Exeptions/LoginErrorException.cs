@@ -7,6 +7,6 @@ namespace ProductQL.Exeptions
 {
     public class LoginErrorException : Exception
     {
-        public int LoginUsername { get; internal set; }
+        public string LoginUsername { get; internal set; }
     }
 }
