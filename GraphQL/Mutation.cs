@@ -33,21 +33,22 @@ namespace ProductQL.GraphQL
         public async Task<AddUserPayload> RegisterUserAsync(AddUserInput input, ClaimsPrincipal claims)
         {
             var userFind = _context.Users.Any(us=>us.Username.ToLower() == input.Username.ToLower());
-            if(userFind) return null;
-            byte[] salt = new byte[128 / 8];
-            string hashed = Convert.ToBase64String(KeyDerivation.Pbkdf2(
-                password: input.Password,
-                salt: salt,
-                prf: KeyDerivationPrf.HMACSHA256,
-                iterationCount: 100000,
-                numBytesRequested: 256 / 8));
+            if(userFind) return new AddUserPayload(new User());
+            // byte[] salt = new byte[128 / 8];
+            // string hashed = Convert.ToBase64String(KeyDerivation.Pbkdf2(
+            //     password: input.Password,
+            //     salt: salt,
+            //     prf: KeyDerivationPrf.HMACSHA256,
+            //     iterationCount: 100000,
+            //     numBytesRequested: 256 / 8));
 
+            var hashedPass = BCrypt.Net.BCrypt.HashPassword(input.Password);
             var user = new User
             {
                 FullName = input.FullName,
                 Username = input.Username,
                 Email = input.Email,
-                Password = hashed
+                Password = hashedPass
             };
            _context.Users.Add(user);
             await _context.SaveChangesAsync();
@@ -56,37 +57,40 @@ namespace ProductQL.GraphQL
 
         public async Task<LoginPayload> LoginUserAsync(LoginUserInput input)
         {   
-            byte[] salt = new byte[128 / 8];
-            string hashed = Convert.ToBase64String(KeyDerivation.Pbkdf2(
-                password: input.password,
-                salt: salt,
-                prf: KeyDerivationPrf.HMACSHA256,
-                iterationCount: 100000,
-                numBytesRequested: 256 / 8));
+            // byte[] salt = new byte[128 / 8];
+            // string hashed = Convert.ToBase64String(KeyDerivation.Pbkdf2(
+            //     password: input.password,
+            //     salt: salt,
+            //     prf: KeyDerivationPrf.HMACSHA256,
+            //     iterationCount: 100000,
+            //     numBytesRequested: 256 / 8));
             
-            Console.WriteLine(hashed);
+            // Console.WriteLine(hashed);
 
-            var userFind = _context.Users.Where(user=>user.Username==input.username && user.Password==hashed).SingleOrDefault();
+            var userFind = _context.Users.Where(user=>user.Username==input.username).SingleOrDefault();
 
             if(userFind==null) throw new LoginErrorException();
+            var valid = BCrypt.Net.BCrypt.Verify(input.password, userFind.Password);
+            if(valid){
 
-            List<Claim> claims = new List<Claim>();
-            claims.Add(new Claim(ClaimTypes.Name, userFind.Username));
-            
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddHours(1),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                List<Claim> claims = new List<Claim>();
+                claims.Add(new Claim(ClaimTypes.Name, userFind.Username));
                 
-            };
-
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            var tokenString = tokenHandler.WriteToken(token);
-            Console.WriteLine(tokenHandler.WriteToken(token));
-            return new LoginPayload(tokenString);
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+                var tokenDescriptor = new SecurityTokenDescriptor
+                {
+                    Subject = new ClaimsIdentity(claims),
+                    Expires = DateTime.UtcNow.AddHours(1),
+                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                    
+                };
+                var token = tokenHandler.CreateToken(tokenDescriptor);
+                var tokenString = tokenHandler.WriteToken(token);
+                return new LoginPayload(tokenString);
+            }
+            
+            else throw new LoginErrorException();
         }
 
         [Authorize]
