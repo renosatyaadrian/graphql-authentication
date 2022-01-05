@@ -23,14 +23,10 @@ namespace ProductQL.GraphQL
     public class Mutation
     {
         private readonly productsContext _context;
-        // private readonly UserManager<IdentityUser> _userManager;
         private readonly AppSettings _appSettings;
-
-        // public Mutation([Service] productsContext context, UserManager<IdentityUser> userManager,  IOptions<AppSettings> appSettings)
         public Mutation([Service] productsContext context, IOptions<AppSettings> appSettings)
         {
             _context = context;
-            // _userManager = userManager;
             _appSettings = appSettings.Value;
         }
 
@@ -45,8 +41,6 @@ namespace ProductQL.GraphQL
                 prf: KeyDerivationPrf.HMACSHA256,
                 iterationCount: 100000,
                 numBytesRequested: 256 / 8));
-            
-            // var hashedPassword = BCrypt.Net.BCrypt.HashPassword(input.Password);
 
             var user = new User
             {
@@ -69,14 +63,12 @@ namespace ProductQL.GraphQL
                 prf: KeyDerivationPrf.HMACSHA256,
                 iterationCount: 100000,
                 numBytesRequested: 256 / 8));
+            
+            Console.WriteLine(hashed);
 
             var userFind = _context.Users.Where(user=>user.Username==input.username && user.Password==hashed).SingleOrDefault();
 
-            // var hashedPassword = 
-
             if(userFind==null) throw new LoginErrorException();
-            BCrypt.Net.BCrypt.HashPassword(input.password);
-            BCrypt.Net.BCrypt.Verify(input.password, userFind.Password);
 
             List<Claim> claims = new List<Claim>();
             claims.Add(new Claim(ClaimTypes.Name, userFind.Username));

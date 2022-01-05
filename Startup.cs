@@ -54,10 +54,7 @@ namespace ProductQL
                     ValidateAudience=false
                 };
             });
-
             var connString = Configuration.GetConnectionString("LocalSQLEdge");
-            // services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite("Data Source=conferences.db"));
-    
             
             services.AddDbContext<productsContext>(options => 
             options.UseSqlServer(connString));
